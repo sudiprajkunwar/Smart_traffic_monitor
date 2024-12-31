@@ -1,0 +1,26 @@
+# Ignore build artifacts
+*.o
+*.out
+*.a
+
+
+# Ignore debugging files
+*.dSYM/
+
+
+
+
+# Ignore directories
+/build/
+/dist/
+/bin/
+/obj/
+
+# Ignore editor/IDE files
+.vscode/
+
+# mp4
+*.mp4
+
+
+
