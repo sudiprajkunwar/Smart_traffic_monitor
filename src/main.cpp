@@ -1,19 +1,20 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
+#include <tesseract/baseapi.h>
 #include <iostream>
 #include <vector>
 #include <fstream>
 
 int main()
 {
-    std::string videoFile = "demo.mp4";            // Path to the input video
-    std::string modelConfiguration = "yolov4.cfg"; // Path to YOLO config file
-    std::string modelWeights = "yolov4.weights";   // Path to YOLO weights file
-    std::string classesFile = "classes.names";     // Path to classes names file
+    std::string videoFile = "demo.mp4";
+    std::string modelConfiguration = "yolov4.cfg";
+    std::string modelWeights = "yolov4.weights";
+    std::string classesFile = "classes.names";
 
-    // Load class names
     std::vector<std::string> classNames;
-    std::ifstream ifs(classesFile.c_str());
+    std::ifstream ifs(classesFile);
+
     if (!ifs.is_open())
     {
         std::cerr << "Error opening classes file!" << std::endl;
@@ -33,6 +34,14 @@ int main()
     if (!cap.isOpened())
     {
         std::cerr << "Error opening video file!" << std::endl;
+        return -1;
+    }
+
+    // Initialize Tesseract OCR
+    tesseract::TessBaseAPI ocr;
+    if (ocr.Init(NULL, "eng"))
+    {
+        std::cerr << "Error initializing Tesseract!" << std::endl;
         return -1;
     }
 
@@ -78,15 +87,32 @@ int main()
                         int x = centerX - width / 2;
                         int y = centerY - height / 2;
 
+                        // Ensure bounding box is within bounds
+                        x = std::max(0, x);
+                        y = std::max(0, y);
+                        width = std::min(frame.cols - x, width);
+                        height = std::min(frame.rows - y, height);
+
+                        // Create bounding box
                         cv::Rect box(x, y, width, height);
-                        cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
-                        cv::putText(frame, "License Plate", cv::Point(x, y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+                        if (box.width > 0 && box.height > 0)
+                        {
+                            cv::Mat licensePlate = frame(box);
 
-                        // Crop the detected license plate region
-                        cv::Mat licensePlate = frame(box);
+                            // Preprocess for OCR
+                            cv::Mat gray;
+                            cv::cvtColor(licensePlate, gray, cv::COLOR_BGR2GRAY);
+                            cv::threshold(gray, gray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
-                        // Display the cropped license plate
-                        cv::imshow("License Plate", licensePlate);
+                            // Perform OCR
+                            ocr.SetImage(gray.data, gray.cols, gray.rows, 1, gray.step);
+                            std::string plateText = ocr.GetUTF8Text();
+                            std::cout << "Detected License Plate Text: " << plateText << std::endl;
+
+                            // Display results
+                            cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
+                            cv::putText(frame, plateText, cv::Point(x, y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+                        }
                     }
                 }
             }
@@ -94,12 +120,13 @@ int main()
 
         // Display the frame with detections
         cv::imshow("Detected License Plates", frame);
-        if (cv::waitKey(30) == 'q') // Exit if 'q' is pressed
+        if (cv::waitKey(30) == 'q')
             break;
     }
 
-    cap.release();           // Release video resources
-    cv::destroyAllWindows(); // Close all OpenCV windows
+    cap.release();
+    cv::destroyAllWindows();
+    ocr.End();
 
     return 0;
 }
