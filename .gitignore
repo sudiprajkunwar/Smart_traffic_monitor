@@ -22,5 +22,8 @@
 # mp4
 *.mp4
 
+# weights
+*.weights
+
 
 
