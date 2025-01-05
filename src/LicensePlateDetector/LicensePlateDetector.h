@@ -1,29 +1,35 @@
-#ifndef LICENSE_PLATE_DETECTOR_H
-#define LICENSE_PLATE_DETECTOR_H
+#ifndef LICENSE_PLATE_DETECTOR_HPP
+#define LICENSE_PLATE_DETECTOR_HPP
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/dnn.hpp>
 #include <tesseract/baseapi.h>
 #include <vector>
 #include <string>
+#include "../Car/Car.h"
 
 class LicensePlateDetector
 {
 public:
-    LicensePlateDetector(const std::string &modelConfig, const std::string &modelWeights, const std::string &classesFile);
-    ~LicensePlateDetector();
+    LicensePlateDetector(const std::string &videoFile, const std::string &modelConfiguration,
+                         const std::string &modelWeights, const std::string &classesFile);
 
-    bool initialize();
-    void processFrame(cv::Mat &frame);
+    void initialize();
+    void processFrames();
 
 private:
+    std::string videoFile;
+    std::string modelConfiguration;
+    std::string modelWeights;
+    std::string classesFile;
+
     cv::dnn::Net net;
     tesseract::TessBaseAPI ocr;
+    Car car;
     std::vector<std::string> classNames;
 
-    bool loadClassNames(const std::string &classesFile);
-    void preprocessForOCR(const cv::Mat &input, cv::Mat &output); // Moved directly here
-    void performOCR(const cv::Mat &licensePlate, cv::Mat &frame, const cv::Rect &box);
+    void loadClassNames();
+    void processDetection(cv::Mat &frame);
 };
 
-#endif
+#endif // LICENSE_PLATE_DETECTOR_HPP

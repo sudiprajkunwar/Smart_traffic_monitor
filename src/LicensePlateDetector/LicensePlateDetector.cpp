@@ -1,37 +1,36 @@
 #include "LicensePlateDetector.h"
-#include <fstream>
+#include <opencv2/opencv.hpp>
+#include <opencv2/dnn.hpp>
+#include <tesseract/baseapi.h>
 #include <iostream>
+#include <fstream>
+#include <cmath>
 
-LicensePlateDetector::LicensePlateDetector(const std::string &modelConfig, const std::string &modelWeights, const std::string &classesFile)
-    : ocr(), net(cv::dnn::readNetFromDarknet(modelConfig, modelWeights))
-{
-    loadClassNames(classesFile);
-}
+#define CLASSES_DATA_AFTER_INDEX 5
 
-LicensePlateDetector::~LicensePlateDetector()
-{
-    ocr.End();
-}
+LicensePlateDetector::LicensePlateDetector(const std::string &videoFile, const std::string &modelConfiguration,
+                                           const std::string &modelWeights, const std::string &classesFile)
+    : videoFile(videoFile), modelConfiguration(modelConfiguration),
+      modelWeights(modelWeights), classesFile(classesFile), net(), ocr() {}
 
-bool LicensePlateDetector::initialize()
+void LicensePlateDetector::initialize()
 {
-    if (ocr.Init(NULL, "eng"))
-    {
-        std::cerr << "Error initializing Tesseract!" << std::endl;
-        return false;
-    }
+    net = cv::dnn::readNetFromDarknet(modelConfiguration, modelWeights);
     net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
     net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
-    return true;
+
+    ocr.Init(NULL, "eng");
+
+    loadClassNames();
 }
 
-bool LicensePlateDetector::loadClassNames(const std::string &classesFile)
+void LicensePlateDetector::loadClassNames()
 {
     std::ifstream ifs(classesFile);
     if (!ifs.is_open())
     {
         std::cerr << "Error opening classes file!" << std::endl;
-        return false;
+        exit(-1);
     }
 
     std::string line;
@@ -39,18 +38,41 @@ bool LicensePlateDetector::loadClassNames(const std::string &classesFile)
     {
         classNames.emplace_back(line);
     }
-    return true;
 }
 
-void LicensePlateDetector::processFrame(cv::Mat &frame)
+void LicensePlateDetector::processFrames()
+{
+    cv::VideoCapture cap(videoFile);
+    if (!cap.isOpened())
+    {
+        std::cerr << "Error opening video file!" << std::endl;
+        exit(-1);
+    }
+
+    cv::Mat frame;
+    while (cap.read(frame))
+    {
+        processDetection(frame); // Call the processDetection function
+
+        // Display the frame with detections
+        cv::imshow("Detected License Plates", frame);
+        if (cv::waitKey(30) == 'q')
+            break;
+    }
+    cap.release();
+    cv::destroyAllWindows();
+}
+
+void LicensePlateDetector::processDetection(cv::Mat &frame)
 {
     cv::Mat blob = cv::dnn::blobFromImage(frame, 1 / 255.0, cv::Size(416, 416), cv::Scalar(0, 0, 0), true, false);
     net.setInput(blob);
 
-    // Get output layer names
     std::vector<std::string> layerNames = net.getUnconnectedOutLayersNames();
     std::vector<cv::Mat> detections;
     net.forward(detections, layerNames);
+
+    double currentTime = cv::getTickCount() / cv::getTickFrequency(); // Get the current time for speed calculation
 
     for (const auto &output : detections)
     {
@@ -63,12 +85,13 @@ void LicensePlateDetector::processFrame(cv::Mat &frame)
             {
                 int classId = -1;
                 float maxConfidence = 0.0;
-                for (int j = 5; j < output.cols; ++j)
+
+                for (int j = CLASSES_DATA_AFTER_INDEX; j < output.cols; ++j)
                 {
                     if (data[j] > maxConfidence)
                     {
                         maxConfidence = data[j];
-                        classId = j - 5;
+                        classId = j - CLASSES_DATA_AFTER_INDEX;
                     }
                 }
 
@@ -81,40 +104,35 @@ void LicensePlateDetector::processFrame(cv::Mat &frame)
                     int x = centerX - width / 2;
                     int y = centerY - height / 2;
 
-                    // Ensure bounding box is within bounds
                     x = std::max(0, x);
                     y = std::max(0, y);
                     width = std::min(frame.cols - x, width);
                     height = std::min(frame.rows - y, height);
 
                     cv::Rect box(x, y, width, height);
+                    // Process the car's speed calculation
+                    car.processFrame(box, currentTime);
+
                     if (box.width > 0 && box.height > 0)
                     {
                         cv::Mat licensePlate = frame(box);
-                        performOCR(licensePlate, frame, box);
+
+                        // Preprocess for OCR
+                        cv::Mat gray;
+                        cv::cvtColor(licensePlate, gray, cv::COLOR_BGR2GRAY);
+                        cv::threshold(gray, gray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+
+                        // Perform OCR
+                        ocr.SetImage(gray.data, gray.cols, gray.rows, 1, gray.step);
+                        std::string plateText = ocr.GetUTF8Text();
+
+                        // Display results
+                        cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
+                        cv::putText(frame, plateText, cv::Point(x, y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+                        std::cout << "Lincence plate number: " << plateText << "\n";
                     }
                 }
             }
         }
     }
-}
-
-void LicensePlateDetector::performOCR(const cv::Mat &licensePlate, cv::Mat &frame, const cv::Rect &box)
-{
-    // Preprocess the license plate image for OCR (convert to grayscale and threshold)
-    cv::Mat gray;
-    preprocessForOCR(licensePlate, gray);
-
-    ocr.SetImage(gray.data, gray.cols, gray.rows, 1, gray.step);
-    std::string plateText = ocr.GetUTF8Text();
-
-    std::cout << "Detected License Plate Text: " << plateText << std::endl;
-    cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
-    cv::putText(frame, plateText, cv::Point(box.x, box.y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
-}
-
-void LicensePlateDetector::preprocessForOCR(const cv::Mat &input, cv::Mat &output)
-{
-    cv::cvtColor(input, output, cv::COLOR_BGR2GRAY);                            // Convert to grayscale
-    cv::threshold(output, output, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU); // Apply Otsu thresholding
 }

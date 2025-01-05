@@ -1,6 +1,10 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/dnn.hpp>
+#include <tesseract/baseapi.h>
 #include <iostream>
-#include "LicensePlateDetector/LicensePlateDetector.h"
+#include <vector>
+#include <fstream>
+#include "./LicensePlateDetector/LicensePlateDetector.h"
 
 int main()
 {
@@ -9,32 +13,9 @@ int main()
     std::string modelWeights = "../models/yolov4.weights";
     std::string classesFile = "../models/classes.names";
 
-    // Initialize LicensePlateDetector
-    LicensePlateDetector detector(modelConfiguration, modelWeights, classesFile);
-    if (!detector.initialize())
-    {
-        std::cerr << "Initialization failed!" << std::endl;
-        return -1;
-    }
-
-    cv::VideoCapture cap(videoFile);
-    if (!cap.isOpened())
-    {
-        std::cerr << "Error opening video file!" << std::endl;
-        return -1;
-    }
-
-    cv::Mat frame;
-    while (cap.read(frame))
-    {
-        detector.processFrame(frame);
-        cv::imshow("Detected License Plates", frame);
-        if (cv::waitKey(30) == 'q')
-            break;
-    }
-
-    cap.release();
-    cv::destroyAllWindows();
+    LicensePlateDetector detector(videoFile, modelConfiguration, modelWeights, classesFile);
+    detector.initialize();
+    detector.processFrames();
 
     return 0;
 }
