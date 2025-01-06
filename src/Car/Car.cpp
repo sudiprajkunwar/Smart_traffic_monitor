@@ -1,8 +1,13 @@
 #include "Car.h"
 #include <cmath>
 #include <iostream>
+#include "../Entity/Entity.h"
 
-Car::Car() : previousPosition(cv::Point(0, 0)), previousTime(0.0) {}
+Car::Car()
+{
+    previousPosition = cv::Point(0, 0);
+    previousTime = 0.0;
+}
 
 double Car::calculateSpeed(double distance, double time) const
 {

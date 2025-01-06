@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.10)
+
+# Project name and C++ standard
+project(smart_traffic_monitor)
+set(CMAKE_CXX_STANDARD 17)
+
+# Include directories
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Collect source files
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+
+# Find OpenCV (adjust version if needed)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+# Find Tesseract
+find_package(Tesseract REQUIRED)
+include_directories(${Tesseract_INCLUDE_DIRS})
+
+# Add executable
+add_executable(smart_traffic_monitor ${SOURCES})
+
+# Link libraries
+target_link_libraries(smart_traffic_monitor ${OpenCV_LIBS} ${Tesseract_LIBRARIES})

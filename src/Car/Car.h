@@ -2,13 +2,11 @@
 #define CAR_H
 
 #include <opencv2/opencv.hpp>
+#include "../Entity/Entity.h"
 
-class Car
+class Car : public Entity
 {
 public:
-    cv::Point previousPosition;
-    double previousTime = 0.0;
-
     // Constructor for Car
     Car();
 
@@ -16,7 +14,7 @@ public:
     double calculateSpeed(double distance, double time) const;
 
     // Function to process each frame and track the car's position
-    void processFrame(cv::Rect &box, double currentTime);
+    void processFrame(cv::Rect &box, double currentTime) override;
 };
 
 #endif // CAR_H
