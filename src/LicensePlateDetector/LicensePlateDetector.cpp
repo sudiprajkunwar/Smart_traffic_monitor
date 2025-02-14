@@ -110,7 +110,12 @@ void LicensePlateDetector::processDetection(cv::Mat &frame)
                     height = std::min(frame.rows - y, height);
 
                     cv::Rect box(x, y, width, height);
-                    // Process the car's speed calculation
+
+                    std::unique_ptr<GenericObject> genericObject;
+
+                    genericObject = std::make_unique<Car>();
+
+                    // Process the tracked object
                     car.processFrame(box, currentTime);
 
                     if (box.width > 0 && box.height > 0)

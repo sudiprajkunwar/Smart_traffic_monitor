@@ -1,17 +1,17 @@
-#ifndef CAR_H
-#define CAR_H
+#ifndef BIKE_H
+#define BIKE_H
 
 #include <opencv2/opencv.hpp>
 #include "../GenericObject/GenericObject.h"
 
-class Car : public GenericObject
+class Bike : public GenericObject
 {
 public:
-    // Constructor for Car class
-    Car();
+    // Constructor for Bike class
+    Bike();
 
     // Override the processFrame method from GenericObject
     void processFrame(cv::Rect &box, double currentTime) override;
 };
 
-#endif // CAR_H
+#endif // BIKE_H

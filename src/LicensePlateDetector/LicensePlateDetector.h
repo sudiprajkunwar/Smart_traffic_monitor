@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include "../Car/Car.h"
+#include "../Bike/Bike.h"
 
 class LicensePlateDetector
 {
