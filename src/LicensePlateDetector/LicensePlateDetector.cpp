@@ -11,15 +11,31 @@
 LicensePlateDetector::LicensePlateDetector(const std::string &videoFile, const std::string &modelConfiguration,
                                            const std::string &modelWeights, const std::string &classesFile)
     : videoFile(videoFile), modelConfiguration(modelConfiguration),
-      modelWeights(modelWeights), classesFile(classesFile), net(), ocr() {}
+      modelWeights(modelWeights), classesFile(classesFile) {}
+
+cv::Rect LicensePlateDetector::calculateBoundingBox(const float *data, int frameWidth, int frameHeight)
+{
+    int centerX = static_cast<int>(data[0] * frameWidth);
+    int centerY = static_cast<int>(data[1] * frameHeight);
+    int width = static_cast<int>(data[2] * frameWidth);
+    int height = static_cast<int>(data[3] * frameHeight);
+
+    int x = centerX - width / 2;
+    int y = centerY - height / 2;
+
+    x = std::max(0, x);
+    y = std::max(0, y);
+    width = std::min(frameWidth - x, width);
+    height = std::min(frameHeight - y, height);
+
+    return cv::Rect(x, y, width, height);
+}
 
 void LicensePlateDetector::initialize()
 {
     net = cv::dnn::readNetFromDarknet(modelConfiguration, modelWeights);
     net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
     net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
-
-    ocr.Init(NULL, "eng");
 
     loadClassNames();
 }
@@ -97,43 +113,24 @@ void LicensePlateDetector::processDetection(cv::Mat &frame)
 
                 if (maxConfidence > 0.5 && classNames[classId] == "license_plate")
                 {
-                    int centerX = static_cast<int>(data[0] * frame.cols);
-                    int centerY = static_cast<int>(data[1] * frame.rows);
-                    int width = static_cast<int>(data[2] * frame.cols);
-                    int height = static_cast<int>(data[3] * frame.rows);
-                    int x = centerX - width / 2;
-                    int y = centerY - height / 2;
 
-                    x = std::max(0, x);
-                    y = std::max(0, y);
-                    width = std::min(frame.cols - x, width);
-                    height = std::min(frame.rows - y, height);
+                    cv::Rect box = calculateBoundingBox(data, frame.cols, frame.rows);
 
-                    cv::Rect box(x, y, width, height);
-
-                    std::unique_ptr<GenericObject> genericObject;
-
-                    genericObject = std::make_unique<Car>();
+                    std::unique_ptr<GenericObject> genericObject = std::make_unique<GenericObject>("Car");
 
                     // Process the tracked object
-                    car.processFrame(box, currentTime);
+                    genericObject->processFrame(box, currentTime);
 
                     if (box.width > 0 && box.height > 0)
                     {
                         cv::Mat licensePlate = frame(box);
 
-                        // Preprocess for OCR
-                        cv::Mat gray;
-                        cv::cvtColor(licensePlate, gray, cv::COLOR_BGR2GRAY);
-                        cv::threshold(gray, gray, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-
-                        // Perform OCR
-                        ocr.SetImage(gray.data, gray.cols, gray.rows, 1, gray.step);
-                        std::string plateText = ocr.GetUTF8Text();
+                        OCRProcessor ocrProcessor;
+                        std::string plateText = ocrProcessor.extractText(licensePlate);
 
                         // Display results
                         cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
-                        cv::putText(frame, plateText, cv::Point(x, y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+                        cv::putText(frame, plateText, cv::Point(box.x, box.y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
                         std::cout << "Lincence plate number: " << plateText << "\n";
                     }
                 }

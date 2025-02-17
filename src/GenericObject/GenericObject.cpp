@@ -4,7 +4,7 @@
 #include "../GenericObject/GenericObject.h"
 
 // Constructor to initialize the object name, position, and time
-GenericObject::GenericObject(std::string name) : objectName(name), previousPosition(cv::Point(0, 0)), previousTime(0.0) {}
+GenericObject::GenericObject(const std::string &name) : objectName(name), previousPosition(cv::Point(0, 0)), previousTime(0.0) {}
 
 // Function to calculate speed
 double GenericObject::calculateSpeed(double distance, double time) const
