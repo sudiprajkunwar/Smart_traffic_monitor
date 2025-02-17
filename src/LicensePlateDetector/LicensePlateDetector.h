@@ -6,7 +6,8 @@
 #include <tesseract/baseapi.h>
 #include <vector>
 #include <string>
-#include "../Car/Car.h"
+#include "./OCRProcessor.cpp"
+#include "../GenericObject/GenericObject.h"
 
 class LicensePlateDetector
 {
@@ -24,12 +25,11 @@ private:
     std::string classesFile;
 
     cv::dnn::Net net;
-    tesseract::TessBaseAPI ocr;
-    Car car;
     std::vector<std::string> classNames;
 
     void loadClassNames();
     void processDetection(cv::Mat &frame);
+    cv::Rect calculateBoundingBox(const float *data, int frameWidth, int frameHeight);
 };
 
 #endif // LICENSE_PLATE_DETECTOR_HPP

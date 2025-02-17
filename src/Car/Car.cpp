@@ -1,31 +1,15 @@
 #include "Car.h"
 #include <cmath>
 #include <iostream>
+#include "../GenericObject/GenericObject.h"
 
-Car::Car() : previousPosition(cv::Point(0, 0)), previousTime(0.0) {}
-
-double Car::calculateSpeed(double distance, double time) const
-{
-    return distance / time;
-}
+Car::Car() : GenericObject("Car") {}
 
 void Car::processFrame(cv::Rect &box, double currentTime)
 {
-    int centerX = box.x + box.width / 2;
-    int centerY = box.y + box.height / 2;
+    // Call the base class implementation
+    GenericObject::processFrame(box, currentTime);
 
-    if (previousPosition.x != 0 && previousPosition.y != 0)
-    {
-        double distance = std::sqrt(std::pow(centerX - previousPosition.x, 2) + std::pow(centerY - previousPosition.y, 2));
-        double time = currentTime - previousTime;
-
-        if (time > 0)
-        {
-            double speed = calculateSpeed(distance, time);
-            std::cout << "Speed: " << speed << " pixels per second" << std::endl;
-        }
-    }
-
-    previousPosition = cv::Point(centerX, centerY);
-    previousTime = currentTime;
+    // Additional behavior specific to Car
+    std::cout << "Car is being tracked!" << std::endl;
 }

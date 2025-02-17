@@ -2,21 +2,16 @@
 #define CAR_H
 
 #include <opencv2/opencv.hpp>
+#include "../GenericObject/GenericObject.h"
 
-class Car
+class Car : public GenericObject
 {
 public:
-    cv::Point previousPosition;
-    double previousTime = 0.0;
-
-    // Constructor for Car
+    // Constructor for Car class
     Car();
 
-    // Function to calculate speed
-    double calculateSpeed(double distance, double time) const;
-
-    // Function to process each frame and track the car's position
-    void processFrame(cv::Rect &box, double currentTime);
+    // Override the processFrame method from GenericObject
+    void processFrame(cv::Rect &box, double currentTime) override;
 };
 
 #endif // CAR_H
