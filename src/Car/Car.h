@@ -11,7 +11,7 @@ public:
     Car();
 
     // Override the processFrame method from GenericObject
-    void processFrame(cv::Rect &box, double currentTime) override;
+    void processFrame(cv::Rect &box, double currentTime);
 };
 
 #endif // CAR_H
