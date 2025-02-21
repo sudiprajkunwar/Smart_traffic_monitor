@@ -10,13 +10,13 @@ protected:
     cv::Point previousPosition;
     double previousTime = 0.0;
     std::string objectName;
-    double calculateSpeed(double distance, double time) const;
 
 public:
     explicit GenericObject(const std::string &name);
 
     // method to process frames and track object's position
     void processFrame(cv::Rect &box, double currentTime);
+    double calculateSpeed(double distance, double time) const;
 
     std::string getObjectName() const;
 };

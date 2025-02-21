@@ -11,12 +11,6 @@
 
 class LicensePlateDetector
 {
-public:
-    LicensePlateDetector(const std::string &videoFile, const std::string &modelConfiguration,
-                         const std::string &modelWeights, const std::string &classesFile);
-
-    void initialize();
-    void processFrames();
 
 private:
     std::string videoFile;
@@ -27,8 +21,15 @@ private:
     cv::dnn::Net net;
     std::vector<std::string> classNames;
 
-    void loadClassNames();
     void processDetection(cv::Mat &frame);
+
+public:
+    LicensePlateDetector(const std::string &videoFile, const std::string &modelConfiguration,
+                         const std::string &modelWeights, const std::string &classesFile);
+
+    void initialize();
+    void processFrames();
+    void loadClassNames();
     cv::Rect calculateBoundingBox(const float *data, int frameWidth, int frameHeight);
 };
 

@@ -29,8 +29,36 @@ else()
     message(FATAL_ERROR "Tesseract not found")
 endif()
 
-# Add executable target
+# Find Google Test
+find_package(GTest REQUIRED)
+if(GTest_FOUND)
+    include_directories(${GTEST_INCLUDE_DIRS})
+
+else()
+    message(FATAL_ERROR "Google Test not found")
+endif()
+
+# Add executable target for the main application
 add_executable(SmartTrafficMonitor ${SOURCES})
 
-# Link libraries
+# Link libraries for the main application
 target_link_libraries(SmartTrafficMonitor ${OpenCV_LIBS} ${TESSERACT_LIBRARIES})
+
+# Collect test source files
+file(GLOB_RECURSE TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp")
+
+# Collect all source files needed for the test executable
+file(GLOB_RECURSE TEST_DEPS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+
+
+# Remove the main application file (if any) from the test dependencies
+list(REMOVE_ITEM TEST_DEPS "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
+
+# Add executable target for tests
+add_executable(SmartTrafficMonitorTests ${TEST_SOURCES} ${TEST_DEPS})
+
+# Link libraries for the test executable
+target_link_libraries(SmartTrafficMonitorTests ${OpenCV_LIBS} ${TESSERACT_LIBRARIES} GTest::GTest GTest::Main)
+
+# Add a test
+add_test(NAME SmartTrafficMonitorTests COMMAND SmartTrafficMonitorTests)
