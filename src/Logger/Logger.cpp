@@ -31,12 +31,6 @@ void Logger::log(LogLevel level, const std::string &message)
 
     // Print to console
     std::cout << logMessage << std::endl;
-
-    // Write to file
-    if (logFile.is_open())
-    {
-        logFile << logMessage << std::endl;
-    }
 }
 
 std::string Logger::getTimestamp()
