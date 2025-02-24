@@ -4,7 +4,7 @@
 #include "../GenericObject/GenericObject.h"
 
 // Constructor to initialize the object name, position, and time
-GenericObject::GenericObject(const std::string &name) : objectName(name), previousPosition(cv::Point(0, 0)), previousTime(0.0) {}
+GenericObject::GenericObject(const std::string &name) : objectName(name), previousPosition(cv::Point(0, 0)), previousTime(0.0), speed(0.0) {}
 
 // Function to calculate speed
 double GenericObject::calculateSpeed(double distance, double time) const
@@ -25,8 +25,8 @@ void GenericObject::processFrame(cv::Rect &box, double currentTime)
 
         if (time > 0)
         {
-            double speed = calculateSpeed(distance, time);
-            std::cout << "Speed of " << objectName << ": " << speed << " pixels per second" << std::endl;
+            speed = calculateSpeed(distance, time);
+            // std::cout << "Speed of " << objectName << ": " << speed << " pixels per second" << std::endl;
         }
     }
 
@@ -37,4 +37,9 @@ void GenericObject::processFrame(cv::Rect &box, double currentTime)
 std::string GenericObject::getObjectName() const
 {
     return objectName;
+}
+
+double GenericObject::getSpeed() const
+{
+    return speed;
 }

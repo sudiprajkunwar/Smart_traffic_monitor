@@ -1,17 +1,16 @@
 #include "LicensePlateDetector.h"
-#include <opencv2/opencv.hpp>
-#include <opencv2/dnn.hpp>
-#include <tesseract/baseapi.h>
-#include <iostream>
-#include <fstream>
-#include <cmath>
 
 #define CLASSES_DATA_AFTER_INDEX 5
 
 LicensePlateDetector::LicensePlateDetector(const std::string &videoFile, const std::string &modelConfiguration,
-                                           const std::string &modelWeights, const std::string &classesFile)
+                                           const std::string &modelWeights, const std::string &classesFile, const AlertSystem &alertSystem)
     : videoFile(videoFile), modelConfiguration(modelConfiguration),
-      modelWeights(modelWeights), classesFile(classesFile) {}
+      modelWeights(modelWeights), classesFile(classesFile), alertSystem(new AlertSystem(new StationNotifier())) {}
+
+LicensePlateDetector::~LicensePlateDetector()
+{
+    delete alertSystem;
+}
 
 cv::Rect LicensePlateDetector::calculateBoundingBox(const float *data, int frameWidth, int frameHeight)
 {
@@ -36,6 +35,7 @@ void LicensePlateDetector::initialize()
     net = cv::dnn::readNetFromDarknet(modelConfiguration, modelWeights);
     net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
     net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
+    genericObject = std::make_unique<GenericObject>("Car");
 
     loadClassNames();
 }
@@ -116,8 +116,6 @@ void LicensePlateDetector::processDetection(cv::Mat &frame)
 
                     cv::Rect box = calculateBoundingBox(data, frame.cols, frame.rows);
 
-                    std::unique_ptr<GenericObject> genericObject = std::make_unique<GenericObject>("Car");
-
                     // Process the tracked object
                     genericObject->processFrame(box, currentTime);
 
@@ -128,10 +126,24 @@ void LicensePlateDetector::processDetection(cv::Mat &frame)
                         OCRProcessor ocrProcessor;
                         std::string plateText = ocrProcessor.extractText(licensePlate);
 
+                        // Track the vehicle
+                        if (trackedVehicles.find(plateText) == trackedVehicles.end())
+                        {
+                            trackedVehicles.emplace(plateText, GenericObject(plateText)); // Use emplace to insert
+                        }
+                        trackedVehicles[plateText].processFrame(box, currentTime);
+
+                        // Check if the detected license plate is blacklisted
+                        alertSystem->checkForBlacklistedVehicle(plateText);
+
+                        // Check for overspeeding vehicles
+                        double speed = trackedVehicles[plateText].getSpeed();
+                        alertSystem->checkForOverspeedingVehicle(plateText, speed);
+
                         // Display results
                         cv::rectangle(frame, box, cv::Scalar(0, 255, 0), 2);
                         cv::putText(frame, plateText, cv::Point(box.x, box.y - 10), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
-                        std::cout << "Lincence plate number: " << plateText << "\n";
+                        // std::cout << "Lincence plate numbersss: " << plateText << "\n";
                     }
                 }
             }
