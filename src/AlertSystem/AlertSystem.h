@@ -35,7 +35,7 @@ public:
     void checkForOverspeedingVehicle(const std::string &licensePlate, double speed)
 
     {
-        std::cout << "licensePlate: " << licensePlate << "\n";
+        Logger::getInstance().log(LogLevel::INFO, "licensePlate: " + licensePlate);
         if (speed > speedLimit)
         {
             std::string reason = "Overspeeding: " + std::to_string(speed) + " pixels per second";

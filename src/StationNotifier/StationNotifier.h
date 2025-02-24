@@ -9,12 +9,18 @@ class StationNotifier : public IAlertNotifier
 public:
     void sendAlert(const std::string &licensePlate, const std::string &reason) override
     {
-        std::cout << "ALERT: Blacklisted vehicle detected!" << std::endl;
-        std::cout << "License Plate: " << licensePlate << std::endl;
-        std::cout << "Reason: " << reason << std::endl;
-        std::cout << "Notifying Station: Central Traffic Control" << std::endl;
-        std::cout << "Action: Dispatching patrol unit to intercept the vehicle." << std::endl;
-        std::cout << "----------------------------------------" << std::endl;
+        std::string alertMessage =
+            "ALERT: Blacklisted vehicle detected!\n"
+            "License Plate: " +
+            licensePlate + "\n"
+                           "Reason: " +
+            reason + "\n"
+                     "Notifying Station: Central Traffic Control\n"
+                     "Action: Dispatching patrol unit to intercept the vehicle.\n"
+                     "----------------------------------------";
+
+        // Log the alert using the Logger singleton
+        Logger::getInstance().log(LogLevel::ERROR, alertMessage);
     }
 };
 

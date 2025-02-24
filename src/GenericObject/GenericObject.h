@@ -3,6 +3,7 @@
 
 #include <string>
 #include <opencv2/opencv.hpp>
+#include "../Logger/Logger.h"
 
 class GenericObject
 {

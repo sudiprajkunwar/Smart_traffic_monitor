@@ -26,7 +26,7 @@ void GenericObject::processFrame(cv::Rect &box, double currentTime)
         if (time > 0)
         {
             speed = calculateSpeed(distance, time);
-            // std::cout << "Speed of " << objectName << ": " << speed << " pixels per second" << std::endl;
+            Logger::getInstance().log(LogLevel::INFO, "Speed of " + objectName + ": " + std::to_string(speed) + " pixels per second");
         }
     }
 
