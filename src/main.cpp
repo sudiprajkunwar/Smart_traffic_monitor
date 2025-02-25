@@ -8,13 +8,21 @@
 
 int main()
 {
+
+    StationNotifier stationNotifier;
+    AlertSystem alertSystem(&stationNotifier);
+
     std::string videoFile = "../data/demo.mp4";
     std::string modelConfiguration = "../models/yolov4.cfg";
     std::string modelWeights = "../models/yolov4.weights";
     std::string classesFile = "../models/classes.names";
 
-    LicensePlateDetector detector(videoFile, modelConfiguration, modelWeights, classesFile);
+    LicensePlateDetector detector(videoFile, modelConfiguration, modelWeights, classesFile, alertSystem);
     detector.initialize();
+
+    // Simulate detecting a blacklisted vehicle
+    alertSystem.checkForBlacklistedVehicle("ABC123");
+
     detector.processFrames();
 
     return 0;
